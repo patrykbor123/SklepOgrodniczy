@@ -6,7 +6,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class LoginInterface extends JFrame {
     private JTextField poleUzytkownika;
@@ -15,8 +18,6 @@ public class LoginInterface extends JFrame {
     private JButton przyciskLogowania;
     private JButton przyciskRejestracji;
     private JButton przyciskZapomnialesHasla;
-
-    private static final String USERS_FILE = "C:\\Users\\Admin\\Desktop\\uzytkownicy.txt";
 
     public LoginInterface() {
         setSize(900, 600);
@@ -215,18 +216,24 @@ public class LoginInterface extends JFrame {
     }
 
     private boolean sprawdzDaneLogowania(String username, String password) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(USERS_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] userDetails = line.split(",");
-                if (userDetails.length >= 5 && userDetails[3].trim().equals(username) && userDetails[4].trim().equals(password)) {
-                    return true;
-                }
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, username);
+            pstmt.setString(2, password); // In a production environment, you should hash and verify passwords
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next(); // Returns true if user exists with given credentials
             }
-        } catch (IOException e) {
+            
+        } catch (SQLException e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Błąd podczas logowania: " + e.getMessage(), 
+                    "Błąd logowania", JOptionPane.ERROR_MESSAGE);
+            return false;
         }
-        return false;
     }
 
     private void pokazPowiadomienie(String message) {

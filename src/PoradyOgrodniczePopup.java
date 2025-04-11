@@ -1,7 +1,7 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.io.*;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -10,9 +10,7 @@ public class PoradyOgrodniczePopup extends JDialog {
     private JFrame parentFrame;
     private JPanel advicePanel;
     private JTextField searchField;
-    private List<String[]> porady;
-    private String filePath = "C:\\Users\\Admin\\Desktop\\porady1.txt";
-    private List<String[]> userAddedPorady = new ArrayList<>(); // Lista porad dodanych przez użytkownika
+    private List<GardenAdvice> porady;
 
     public PoradyOgrodniczePopup(JFrame parent) {
         super(parent, "Porady ogrodnicze", true); // true oznacza, że okno jest modalne
@@ -60,8 +58,8 @@ public class PoradyOgrodniczePopup extends JDialog {
         advicePanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(51, 153, 51)), "Porady ogrodnicze",
                 0, 0, new Font("Arial", Font.BOLD, 18), Color.BLACK));
 
-        // Wczytanie porad z pliku
-        porady = wczytajPoradyZPliku(filePath);
+        // Wczytanie porad z bazy danych
+        porady = loadAdviceFromDatabase();
         displayAdvice(porady);
 
         JScrollPane scrollPane = new JScrollPane(advicePanel);
@@ -72,10 +70,41 @@ public class PoradyOgrodniczePopup extends JDialog {
         add(panel);
     }
 
-    private void displayAdvice(List<String[]> porady) {
+    // Klasa reprezentująca pojedynczą poradę ogrodniczą
+    private static class GardenAdvice {
+        private int id;
+        private String title;
+        private String content;
+        private boolean userAdded;
+        
+        public GardenAdvice(int id, String title, String content, boolean userAdded) {
+            this.id = id;
+            this.title = title;
+            this.content = content;
+            this.userAdded = userAdded;
+        }
+        
+        public int getId() {
+            return id;
+        }
+        
+        public String getTitle() {
+            return title;
+        }
+        
+        public String getContent() {
+            return content;
+        }
+        
+        public boolean isUserAdded() {
+            return userAdded;
+        }
+    }
+
+    private void displayAdvice(List<GardenAdvice> porady) {
         advicePanel.removeAll();
-        for (String[] porada : porady) {
-            addAdviceToPanel(advicePanel, porada[0], porada[1], userAddedPorady.contains(porada));
+        for (GardenAdvice porada : porady) {
+            addAdviceToPanel(advicePanel, porada);
         }
         advicePanel.revalidate();
         advicePanel.repaint();
@@ -83,8 +112,9 @@ public class PoradyOgrodniczePopup extends JDialog {
 
     private void searchAdvice() {
         String query = searchField.getText().toLowerCase();
-        List<String[]> filteredAdvice = porady.stream()
-                .filter(porada -> porada[0].toLowerCase().contains(query) || porada[1].toLowerCase().contains(query))
+        List<GardenAdvice> filteredAdvice = porady.stream()
+                .filter(porada -> porada.getTitle().toLowerCase().contains(query) || 
+                                 porada.getContent().toLowerCase().contains(query))
                 .collect(Collectors.toList());
         displayAdvice(filteredAdvice);
     }
@@ -112,16 +142,15 @@ public class PoradyOgrodniczePopup extends JDialog {
             String title = titleField.getText();
             String content = contentArea.getText();
             if (!title.isEmpty() && !content.isEmpty()) {
-                try (FileWriter fw = new FileWriter(filePath, true);
-                     BufferedWriter bw = new BufferedWriter(fw);
-                     PrintWriter out = new PrintWriter(bw)) {
-                    out.println(title + "," + content);
-                    String[] newPorada = new String[]{title, content};
-                    porady.add(newPorada);
-                    userAddedPorady.add(newPorada);
+                if (insertAdviceToDatabase(title, content, true)) {
+                    // Przeładuj porady z bazy danych, aby uzyskać nowy identyfikator
+                    porady = loadAdviceFromDatabase();
                     displayAdvice(porady);
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Porada została dodana pomyślnie!", 
+                            "Sukces", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Błąd podczas dodawania porady.", 
+                            "Błąd", JOptionPane.ERROR_MESSAGE);
                 }
             }
         }
@@ -130,78 +159,148 @@ public class PoradyOgrodniczePopup extends JDialog {
     private void showRandomAdvice() {
         if (!porady.isEmpty()) {
             int randomIndex = (int) (Math.random() * porady.size());
-            String[] randomAdvice = porady.get(randomIndex);
-            JOptionPane.showMessageDialog(this, randomAdvice[1], randomAdvice[0], JOptionPane.INFORMATION_MESSAGE);
+            GardenAdvice randomAdvice = porady.get(randomIndex);
+            JOptionPane.showMessageDialog(this, randomAdvice.getContent(), randomAdvice.getTitle(), JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "Nie znaleziono porad ogrodniczych.", "Informacja", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
-    private void addAdviceToPanel(JPanel panel, String title, String content, boolean userAdded) {
-        JPanel advice = new JPanel(new BorderLayout());
-        advice.setOpaque(false); // Ustawienie przezroczystości dla panelu z poradą
+    private void addAdviceToPanel(JPanel panel, GardenAdvice advice) {
+        JPanel advicePanel = new JPanel(new BorderLayout());
+        advicePanel.setOpaque(false); // Ustawienie przezroczystości dla panelu z poradą
 
-        JLabel titleLabel = new JLabel(title);
+        JLabel titleLabel = new JLabel(advice.getTitle());
         titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
         titleLabel.setForeground(new Color(51, 153, 51)); // ciemny zielony
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
-        advice.add(titleLabel, BorderLayout.NORTH);
+        advicePanel.add(titleLabel, BorderLayout.NORTH);
 
-        JTextArea contentArea = new JTextArea(content);
+        JTextArea contentArea = new JTextArea(advice.getContent());
         contentArea.setFont(new Font("Arial", Font.PLAIN, 14));
         contentArea.setForeground(Color.BLACK);
         contentArea.setLineWrap(true);
         contentArea.setWrapStyleWord(true);
         contentArea.setEditable(false);
         contentArea.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-        advice.add(contentArea, BorderLayout.CENTER);
+        advicePanel.add(contentArea, BorderLayout.CENTER);
 
-        if (userAdded) {
+        if (advice.isUserAdded()) {
             JButton deleteButton = new JButton("Usuń");
             deleteButton.setToolTipText("Kliknij, aby usunąć tę poradę");
             deleteButton.addActionListener(e -> {
-                porady.removeIf(p -> p[0].equals(title) && p[1].equals(content));
-                userAddedPorady.removeIf(p -> p[0].equals(title) && p[1].equals(content));
-                saveAdviceToFile();
-                displayAdvice(porady);
+                if (deleteAdviceFromDatabase(advice.getId())) {
+                    porady.remove(advice);
+                    displayAdvice(porady);
+                    JOptionPane.showMessageDialog(this, "Porada została usunięta pomyślnie!", 
+                            "Sukces", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Błąd podczas usuwania porady.", 
+                            "Błąd", JOptionPane.ERROR_MESSAGE);
+                }
             });
-            advice.add(deleteButton, BorderLayout.EAST);
+            advicePanel.add(deleteButton, BorderLayout.EAST);
         }
 
-        advice.setBorder(BorderFactory.createCompoundBorder(
+        advicePanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(51, 153, 51)),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)));
 
-        panel.add(advice);
+        panel.add(advicePanel);
     }
 
-    private void saveAdviceToFile() {
-        try (FileWriter fw = new FileWriter(filePath);
-             BufferedWriter bw = new BufferedWriter(fw);
-             PrintWriter out = new PrintWriter(bw)) {
-            for (String[] porada : porady) {
-                out.println(porada[0] + "," + porada[1]);
+    private List<GardenAdvice> loadAdviceFromDatabase() {
+        List<GardenAdvice> adviceList = new ArrayList<>();
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT id, title, content, user_added FROM garden_advice ORDER BY id")) {
+            
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String title = rs.getString("title");
+                String content = rs.getString("content");
+                boolean userAdded = rs.getBoolean("user_added");
+                
+                adviceList.add(new GardenAdvice(id, title, content, userAdded));
             }
-        } catch (IOException e) {
+            
+        } catch (SQLException e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Błąd podczas wczytywania porad: " + e.getMessage(), 
+                    "Błąd bazy danych", JOptionPane.ERROR_MESSAGE);
+        }
+        
+        return adviceList;
+    }
+    
+    private boolean insertAdviceToDatabase(String title, String content, boolean userAdded) {
+        String sql = "INSERT INTO garden_advice (title, content, user_added) VALUES (?, ?, ?)";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, title);
+            pstmt.setString(2, content);
+            pstmt.setBoolean(3, userAdded);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Błąd podczas dodawania porady: " + e.getMessage(), 
+                    "Błąd bazy danych", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+    }
+    
+    private boolean deleteAdviceFromDatabase(int id) {
+        String sql = "DELETE FROM garden_advice WHERE id = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, id);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Błąd podczas usuwania porady: " + e.getMessage(), 
+                    "Błąd bazy danych", JOptionPane.ERROR_MESSAGE);
+            return false;
         }
     }
 
-    private List<String[]> wczytajPoradyZPliku(String nazwaPliku) {
-        List<String[]> porady = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(nazwaPliku))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split(",", 2);
-                if (parts.length == 2) {
-                    porady.add(parts);
-                }
+    // Metoda do dodania przykładowych porad ogrodniczych do bazy danych
+    public static void initializeDefaultAdvice() {
+        String[][] defaultAdvice = {
+            {"Nawadnianie roślin", "Podlewaj rośliny wcześnie rano lub wieczorem, aby zmniejszyć parowanie. Zwracaj uwagę na indywidualne potrzeby każdej rośliny."},
+            {"Naturalne nawozy", "Kompost jest doskonałym, naturalnym nawozem dla roślin ogrodowych. Przygotuj swój własny kompost z odpadów kuchennych i ogrodowych."},
+            {"Ochrona przed szkodnikami", "Stosuj naturalne metody ochrony przed szkodnikami, takie jak nasadzenia roślin odstraszających szkodniki lub sprowadzanie naturalnych drapieżników."},
+            {"Sadzenie roślin", "Wybieraj rośliny odpowiednie dla twojego klimatu i warunków glebowych. Sprawdź pH gleby przed sadzeniem, aby zapewnić optymalne warunki wzrostu."}
+        };
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO garden_advice (title, content, user_added) VALUES (?, ?, false) ON CONFLICT DO NOTHING")) {
+            
+            for (String[] advice : defaultAdvice) {
+                pstmt.setString(1, advice[0]);
+                pstmt.setString(2, advice[1]);
+                pstmt.executeUpdate();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            
+        } catch (SQLException e) {
+            System.err.println("Błąd podczas inicjalizacji domyślnych porad: " + e.getMessage());
         }
-        return porady;
     }
 
     public static void popup(JFrame parent) {
+        // Dodajemy przykładowe porady przy każdym uruchomieniu aplikacji (zostaną dodane tylko, jeśli nie istnieją)
+        initializeDefaultAdvice();
+        
         PoradyOgrodniczePopup popup = new PoradyOgrodniczePopup(parent);
         popup.setVisible(true);
     }

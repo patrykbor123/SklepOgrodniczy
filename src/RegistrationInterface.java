@@ -4,218 +4,243 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.regex.Pattern;
- public class RegistrationInterface extends JFrame {
-     private JTextField poleImie;
-     private JTextField poleNazwisko;
-     private JTextField poleEmail;
-     private JTextField poleUzytkownika;
-     private JPasswordField poleHasla;
-     private JButton przyciskRejestracji;
-     private JLabel messageLabel;
 
-     private static final String USERS_FILE = "C:\\Users\\Admin\\Desktop\\uzytkownicy.txt"; // Ujednolicona ścieżka do pliku użytkowników // Ścieżka do pliku użytkowników
+public class RegistrationInterface extends JFrame {
+    private JTextField poleImie;
+    private JTextField poleNazwisko;
+    private JTextField poleEmail;
+    private JTextField poleUzytkownika;
+    private JPasswordField poleHasla;
+    private JButton przyciskRejestracji;
+    private JLabel messageLabel;
 
-     public RegistrationInterface() {
-         setTitle("Rejestracja");
-         setSize(400, 500);
-         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-         setResizable(false); // Blokowanie zmiany rozmiaru okna
+    public RegistrationInterface() {
+        setTitle("Rejestracja");
+        setSize(400, 500);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setResizable(false); // Blokowanie zmiany rozmiaru okna
 
-         JPanel panelGlowny = new JPanel();
-         panelGlowny.setLayout(new BoxLayout(panelGlowny, BoxLayout.Y_AXIS));
-         panelGlowny.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-         panelGlowny.setBackground(new Color(240, 255, 240)); // Jasnozielone tło
+        JPanel panelGlowny = new JPanel();
+        panelGlowny.setLayout(new BoxLayout(panelGlowny, BoxLayout.Y_AXIS));
+        panelGlowny.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panelGlowny.setBackground(new Color(240, 255, 240)); // Jasnozielone tło
 
-         JPanel panelTytulowy = new JPanel();
-         panelTytulowy.setBackground(new Color(0, 128, 0)); // Zielony
-         JLabel etykietaTytulowa = new JLabel("Formularz Rejestracji");
-         etykietaTytulowa.setFont(new Font("Arial", Font.BOLD, 28));
-         etykietaTytulowa.setForeground(Color.WHITE);
-         panelTytulowy.add(etykietaTytulowa);
+        JPanel panelTytulowy = new JPanel();
+        panelTytulowy.setBackground(new Color(0, 128, 0)); // Zielony
+        JLabel etykietaTytulowa = new JLabel("Formularz Rejestracji");
+        etykietaTytulowa.setFont(new Font("Arial", Font.BOLD, 28));
+        etykietaTytulowa.setForeground(Color.WHITE);
+        panelTytulowy.add(etykietaTytulowa);
 
-         JPanel panelFormularza = new JPanel();
-         panelFormularza.setLayout(new BoxLayout(panelFormularza, BoxLayout.Y_AXIS));
-         panelFormularza.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
-         panelFormularza.setBackground(new Color(240, 255, 240)); // Jasnozielone tło
+        JPanel panelFormularza = new JPanel();
+        panelFormularza.setLayout(new BoxLayout(panelFormularza, BoxLayout.Y_AXIS));
+        panelFormularza.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
+        panelFormularza.setBackground(new Color(240, 255, 240)); // Jasnozielone tło
 
-         JLabel etykietaPodpowiedz = new JLabel("Wprowadź dane rejestracyjne");
-         etykietaPodpowiedz.setFont(new Font("Arial", Font.PLAIN, 16));
-         etykietaPodpowiedz.setAlignmentX(Component.CENTER_ALIGNMENT);
-         panelFormularza.add(etykietaPodpowiedz);
+        JLabel etykietaPodpowiedz = new JLabel("Wprowadź dane rejestracyjne");
+        etykietaPodpowiedz.setFont(new Font("Arial", Font.PLAIN, 16));
+        etykietaPodpowiedz.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelFormularza.add(etykietaPodpowiedz);
 
-         panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
+        panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
 
-         JLabel etykietaImie = new JLabel("Imię:");
-         etykietaImie.setFont(new Font("Arial", Font.PLAIN, 14));
-         etykietaImie.setAlignmentX(Component.CENTER_ALIGNMENT);
-         panelFormularza.add(etykietaImie);
+        JLabel etykietaImie = new JLabel("Imię:");
+        etykietaImie.setFont(new Font("Arial", Font.PLAIN, 14));
+        etykietaImie.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelFormularza.add(etykietaImie);
 
-         poleImie = new JTextField(10);
-         poleImie.setMaximumSize(new Dimension(200, 30));
-         poleImie.setFont(new Font("Arial", Font.PLAIN, 14));
-         poleImie.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-         panelFormularza.add(poleImie);
-         poleImie.setToolTipText("Wprowadź swoje imię");
+        poleImie = new JTextField(10);
+        poleImie.setMaximumSize(new Dimension(200, 30));
+        poleImie.setFont(new Font("Arial", Font.PLAIN, 14));
+        poleImie.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        panelFormularza.add(poleImie);
+        poleImie.setToolTipText("Wprowadź swoje imię");
 
-         panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
+        panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
 
-         JLabel etykietaNazwisko = new JLabel("Nazwisko:");
-         etykietaNazwisko.setFont(new Font("Arial", Font.PLAIN, 14));
-         etykietaNazwisko.setAlignmentX(Component.CENTER_ALIGNMENT);
-         panelFormularza.add(etykietaNazwisko);
+        JLabel etykietaNazwisko = new JLabel("Nazwisko:");
+        etykietaNazwisko.setFont(new Font("Arial", Font.PLAIN, 14));
+        etykietaNazwisko.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelFormularza.add(etykietaNazwisko);
 
-         poleNazwisko = new JTextField(10);
-         poleNazwisko.setMaximumSize(new Dimension(200, 30));
-         poleNazwisko.setFont(new Font("Arial", Font.PLAIN, 14));
-         poleNazwisko.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-         panelFormularza.add(poleNazwisko);
-         poleNazwisko.setToolTipText("Wprowadz swoje Nazwisko");
+        poleNazwisko = new JTextField(10);
+        poleNazwisko.setMaximumSize(new Dimension(200, 30));
+        poleNazwisko.setFont(new Font("Arial", Font.PLAIN, 14));
+        poleNazwisko.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        panelFormularza.add(poleNazwisko);
+        poleNazwisko.setToolTipText("Wprowadz swoje Nazwisko");
 
-         panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
+        panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
 
-         JLabel etykietaEmail = new JLabel("Email:");
-         etykietaEmail.setFont(new Font("Arial", Font.PLAIN, 14));
-         etykietaEmail.setAlignmentX(Component.CENTER_ALIGNMENT);
-         panelFormularza.add(etykietaEmail);
+        JLabel etykietaEmail = new JLabel("Email:");
+        etykietaEmail.setFont(new Font("Arial", Font.PLAIN, 14));
+        etykietaEmail.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelFormularza.add(etykietaEmail);
 
-         poleEmail = new JTextField(10);
-         poleEmail.setMaximumSize(new Dimension(200, 30));
-         poleEmail.setFont(new Font("Arial", Font.PLAIN, 14));
-         poleEmail.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-         panelFormularza.add(poleEmail);
-         poleEmail.setToolTipText("Wprowadz swoj Email");
+        poleEmail = new JTextField(10);
+        poleEmail.setMaximumSize(new Dimension(200, 30));
+        poleEmail.setFont(new Font("Arial", Font.PLAIN, 14));
+        poleEmail.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        panelFormularza.add(poleEmail);
+        poleEmail.setToolTipText("Wprowadz swoj Email");
 
-         panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
+        panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
 
-         JLabel etykietaUzytkownika = new JLabel("Nazwa użytkownika:");
-         etykietaUzytkownika.setFont(new Font("Arial", Font.PLAIN, 14));
-         etykietaUzytkownika.setAlignmentX(Component.CENTER_ALIGNMENT);
-         panelFormularza.add(etykietaUzytkownika);
+        JLabel etykietaUzytkownika = new JLabel("Nazwa użytkownika:");
+        etykietaUzytkownika.setFont(new Font("Arial", Font.PLAIN, 14));
+        etykietaUzytkownika.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelFormularza.add(etykietaUzytkownika);
 
-         poleUzytkownika = new JTextField(10);
-         poleUzytkownika.setMaximumSize(new Dimension(200, 30));
-         poleUzytkownika.setFont(new Font("Arial", Font.PLAIN, 14));
-         poleUzytkownika.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-         panelFormularza.add(poleUzytkownika);
-         poleUzytkownika.setToolTipText("Wprowadz Nazwe Uytkownika");
+        poleUzytkownika = new JTextField(10);
+        poleUzytkownika.setMaximumSize(new Dimension(200, 30));
+        poleUzytkownika.setFont(new Font("Arial", Font.PLAIN, 14));
+        poleUzytkownika.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        panelFormularza.add(poleUzytkownika);
+        poleUzytkownika.setToolTipText("Wprowadz Nazwe Uytkownika");
 
-         panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
+        panelFormularza.add(Box.createRigidArea(new Dimension(0, 20)));
 
-         JLabel etykietaHasla = new JLabel("Hasło:");
-         etykietaHasla.setFont(new Font("Arial", Font.PLAIN, 14));
-         etykietaHasla.setAlignmentX(Component.CENTER_ALIGNMENT);
-         panelFormularza.add(etykietaHasla);
+        JLabel etykietaHasla = new JLabel("Hasło:");
+        etykietaHasla.setFont(new Font("Arial", Font.PLAIN, 14));
+        etykietaHasla.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelFormularza.add(etykietaHasla);
 
-         poleHasla = new JPasswordField(10);
-         poleHasla.setMaximumSize(new Dimension(200, 30));
-         poleHasla.setFont(new Font("Arial", Font.PLAIN, 14));
-         poleHasla.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-         panelFormularza.add(poleHasla);
-         poleHasla.setToolTipText("Wprowadź Hasło");
+        poleHasla = new JPasswordField(10);
+        poleHasla.setMaximumSize(new Dimension(200, 30));
+        poleHasla.setFont(new Font("Arial", Font.PLAIN, 14));
+        poleHasla.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        panelFormularza.add(poleHasla);
+        poleHasla.setToolTipText("Wprowadź Hasło");
 
-         panelFormularza.add(Box.createRigidArea(new Dimension(0, 30)));
+        panelFormularza.add(Box.createRigidArea(new Dimension(0, 30)));
 
-         przyciskRejestracji = new JButton("Zarejestruj się");
-         przyciskRejestracji.setAlignmentX(Component.CENTER_ALIGNMENT);
-         przyciskRejestracji.setBackground(new Color(0, 128, 0)); // Zielony
-         przyciskRejestracji.setForeground(Color.WHITE);
-         przyciskRejestracji.setFocusPainted(false);
-         przyciskRejestracji.setFont(new Font("Arial", Font.BOLD, 16));
-         przyciskRejestracji.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-         przyciskRejestracji.setCursor(new Cursor(Cursor.HAND_CURSOR));
-         przyciskRejestracji.setToolTipText("Kliknij, aby się zarejestrować");
-         przyciskRejestracji.addActionListener(new ActionListener() {
-             @Override
-             public void actionPerformed(ActionEvent e) {
-                 try {
-                     validateForm();
-                     zapiszUzytkownika();
-                     messageLabel.setText("Rejestracja zakończona pomyślnie!");
-                     messageLabel.setForeground(Color.GREEN);
-                 } catch (RegistrationException ex) {
-                     messageLabel.setText(ex.getMessage());
-                     messageLabel.setForeground(Color.RED);
-                 }
-             }
-         });
+        przyciskRejestracji = new JButton("Zarejestruj się");
+        przyciskRejestracji.setAlignmentX(Component.CENTER_ALIGNMENT);
+        przyciskRejestracji.setBackground(new Color(0, 128, 0)); // Zielony
+        przyciskRejestracji.setForeground(Color.WHITE);
+        przyciskRejestracji.setFocusPainted(false);
+        przyciskRejestracji.setFont(new Font("Arial", Font.BOLD, 16));
+        przyciskRejestracji.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        przyciskRejestracji.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        przyciskRejestracji.setToolTipText("Kliknij, aby się zarejestrować");
+        przyciskRejestracji.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    validateForm();
+                    if (zapiszUzytkownika()) {
+                        messageLabel.setText("Rejestracja zakończona pomyślnie!");
+                        messageLabel.setForeground(Color.GREEN);
+                    } else {
+                        messageLabel.setText("Błąd podczas rejestracji. Spróbuj ponownie.");
+                        messageLabel.setForeground(Color.RED);
+                    }
+                } catch (RegistrationException ex) {
+                    messageLabel.setText(ex.getMessage());
+                    messageLabel.setForeground(Color.RED);
+                }
+            }
+        });
 
-         // Efekt najechania
-         przyciskRejestracji.addMouseListener(new MouseAdapter() {
-             public void mouseEntered(MouseEvent evt) {
-                 przyciskRejestracji.setBackground(new Color(34, 139, 34)); // Zielony, ciemniejszy
-             }
+        // Efekt najechania
+        przyciskRejestracji.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent evt) {
+                przyciskRejestracji.setBackground(new Color(34, 139, 34)); // Zielony, ciemniejszy
+            }
 
-             public void mouseExited(MouseEvent evt) {
-                 przyciskRejestracji.setBackground(new Color(0, 128, 0)); // Powrót do zielonego
-             }
-         });
+            public void mouseExited(MouseEvent evt) {
+                przyciskRejestracji.setBackground(new Color(0, 128, 0)); // Powrót do zielonego
+            }
+        });
 
-         panelFormularza.add(przyciskRejestracji);
+        panelFormularza.add(przyciskRejestracji);
 
-         messageLabel = new JLabel("", SwingConstants.CENTER);
-         messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-         panelFormularza.add(messageLabel);
+        messageLabel = new JLabel("", SwingConstants.CENTER);
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelFormularza.add(messageLabel);
 
-         panelGlowny.add(panelTytulowy);
-         panelGlowny.add(Box.createRigidArea(new Dimension(0, 30)));
-         panelGlowny.add(panelFormularza);
-         getContentPane().add(panelGlowny);
-         pack();
-         setLocationRelativeTo(null); // Wyśrodkowanie okna
-         setVisible(true);
-     }
+        panelGlowny.add(panelTytulowy);
+        panelGlowny.add(Box.createRigidArea(new Dimension(0, 30)));
+        panelGlowny.add(panelFormularza);
+        getContentPane().add(panelGlowny);
+        pack();
+        setLocationRelativeTo(null); // Wyśrodkowanie okna
+        setVisible(true);
+    }
 
-     private void validateForm() throws RegistrationException {
-         String imie = poleImie.getText();
-         String nazwisko = poleNazwisko.getText();
-         String email = poleEmail.getText();
-         String username = poleUzytkownika.getText();
-         String password = new String(poleHasla.getPassword());
+    private void validateForm() throws RegistrationException {
+        String imie = poleImie.getText();
+        String nazwisko = poleNazwisko.getText();
+        String email = poleEmail.getText();
+        String username = poleUzytkownika.getText();
+        String password = new String(poleHasla.getPassword());
 
-         if (imie.isEmpty() || nazwisko.isEmpty() || email.isEmpty() || username.isEmpty() || password.isEmpty()) {
-             throw new RegistrationException("Wszystkie pola są wymagane.");
-         }
+        if (imie.isEmpty() || nazwisko.isEmpty() || email.isEmpty() || username.isEmpty() || password.isEmpty()) {
+            throw new RegistrationException("Wszystkie pola są wymagane.");
+        }
 
-         if (!Pattern.matches("^[\\w.%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", email)) {
-             throw new RegistrationException("Podaj poprawny adres e-mail.");
-         }
+        if (!Pattern.matches("^[\\w.%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", email)) {
+            throw new RegistrationException("Podaj poprawny adres e-mail.");
+        }
 
+        if (!Pattern.matches("^[a-zA-Z0-9_]+$", username)) {
+            throw new RegistrationException("Nazwa użytkownika może zawierać tylko litery, cyfry i _.");
+        }
 
-         if (!Pattern.matches("^[a-zA-Z0-9_]+$", username)) {
-             throw new RegistrationException("Nazwa użytkownika może zawierać tylko litery, cyfry i _.");
-         }
+        if (password.length() < 8) {
+            throw new RegistrationException("Hasło musi mieć co najmniej 8 znaków.");
+        }
+    }
 
-         if (password.length() < 8) {
-             throw new RegistrationException("Hasło musi mieć co najmniej 8 znaków.");
-         }
-     }
-     private void zapiszUzytkownika() {
-         String imie = poleImie.getText().trim();
-         String nazwisko = poleNazwisko.getText().trim();
-         String email = poleEmail.getText().trim();
-         String username = poleUzytkownika.getText().trim();
-         String password = new String(poleHasla.getPassword()).trim();
+    private boolean zapiszUzytkownika() {
+        String imie = poleImie.getText().trim();
+        String nazwisko = poleNazwisko.getText().trim();
+        String email = poleEmail.getText().trim();
+        String username = poleUzytkownika.getText().trim();
+        String password = new String(poleHasla.getPassword()).trim();
 
-         try (BufferedWriter writer = new BufferedWriter(new FileWriter(USERS_FILE, true))) {
-             writer.write(imie + "," + nazwisko + "," + email + "," + username + "," + password);
-             writer.newLine();
-             writer.flush(); // Ensure data is written to file immediately
-         } catch (IOException e) {
-             JOptionPane.showMessageDialog(null, "Błąd zapisu użytkownika do pliku.", "Błąd", JOptionPane.ERROR_MESSAGE);
-         }
-     }
+        String sql = "INSERT INTO users (first_name, last_name, email, username, password) VALUES (?, ?, ?, ?, ?)";
 
-     private static class RegistrationException extends Exception {
-         public RegistrationException(String message) {
-             super(message);
-         }
-     }
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-     public static void main(String[] args) {
-         SwingUtilities.invokeLater(RegistrationInterface::new);
-     }
- }
+            pstmt.setString(1, imie);
+            pstmt.setString(2, nazwisko);
+            pstmt.setString(3, email);
+            pstmt.setString(4, username);
+            pstmt.setString(5, password); // In a production environment, you should hash this password
+
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+
+        } catch (SQLException e) {
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("unique constraint") && errorMessage.contains("email")) {
+                JOptionPane.showMessageDialog(this, "Ten adres e-mail jest już zarejestrowany.",
+                        "Błąd rejestracji", JOptionPane.ERROR_MESSAGE);
+            } else if (errorMessage.contains("unique constraint") && errorMessage.contains("username")) {
+                JOptionPane.showMessageDialog(this, "Ta nazwa użytkownika jest już zajęta.",
+                        "Błąd rejestracji", JOptionPane.ERROR_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Wystąpił błąd podczas rejestracji: " + errorMessage,
+                        "Błąd rejestracji", JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
+            }
+            return false;
+        }
+    }
+
+    private static class RegistrationException extends Exception {
+        public RegistrationException(String message) {
+            super(message);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(RegistrationInterface::new);
+    }
+}
